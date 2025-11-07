@@ -1,0 +1,13 @@
+[package]
+name = "inkless"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+inkless-core = { version = "0.1", path = "../inkless-core", default-features = false }
+inkless-macros = { version = "0.1", path = "../inkless-macros" }
+
+[features]
+default = ["std"]
+std = ["alloc", "inkless-core/std"]
+alloc = ["inkless-core/alloc"]
