@@ -1,16 +1,19 @@
-use crate::canvas::RenderBufferCanvas;
+use crate::{
+    canvas::{DefaultTag, RenderBufferCanvas},
+    tag::Tag,
+};
 
-pub trait Renderable<'tag> {
+pub trait Renderable<T: Tag, D: DefaultTag<T>> {
     fn render_into<'buffer_reference>(
         &self,
-        canvas: &mut RenderBufferCanvas<'tag, 'buffer_reference>,
+        canvas: &mut RenderBufferCanvas<'buffer_reference, T, D>,
     ) -> Result<(), ()>;
 }
 
-impl<'a, 't, O: Renderable<'t>> Renderable<'t> for &'a O {
+impl<'a, T: Tag, D: DefaultTag<T>, O: Renderable<T, D>> Renderable<T, D> for &'a O {
     fn render_into<'buffer_reference>(
         &self,
-        canvas: &mut RenderBufferCanvas<'t, 'buffer_reference>,
+        canvas: &mut RenderBufferCanvas<'buffer_reference, T, D>,
     ) -> Result<(), ()> {
         (**self).render_into(canvas)
     }

@@ -3,4 +3,14 @@ name = "inkless-macros"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+proc-macro = true
+
 [dependencies]
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "2", features = ["full"] }
+unicode-segmentation = "1"
+
+# Assuming your core crate is published as `inkless-core`:
+inkless-core = { path = "../inkless-core" }

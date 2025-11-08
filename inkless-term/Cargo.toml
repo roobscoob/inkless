@@ -1,0 +1,16 @@
+[package]
+name = "inkless-term"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+inkless-core = { path = "../inkless-core" }
+libc = { version = "0.2", optional = true }
+windows-sys = { version = "0.61", optional = true, features = [
+    "Win32_System_Console",
+] }
+
+[features]
+# By default, include standard library support
+default = ["std"]
+std = ["libc", "windows-sys"]

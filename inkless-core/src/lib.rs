@@ -4,8 +4,10 @@
 extern crate alloc;
 
 pub mod buffer;
+pub mod builtins;
 pub mod canvas;
 pub mod grapheme;
 pub mod render_position;
 pub mod renderable;
 pub mod tag;
+pub mod writer;

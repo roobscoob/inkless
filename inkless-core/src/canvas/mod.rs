@@ -1,3 +1,4 @@
+pub mod ext;
 pub mod summary;
 
 use crate::{
@@ -9,29 +10,48 @@ use crate::{
     tag::Tag,
 };
 
-pub struct RenderBufferCanvas<'tag, 'reference> {
-    buffer: &'reference mut (dyn RenderBuffer<'tag> + 'reference),
-    start_position: RenderPosition,
-    position: RenderPosition,
-    default_tag: Option<&'tag dyn Tag>,
+pub trait DefaultTag<T: Tag>: Clone {
+    fn get(&self) -> Option<T>;
 }
 
-impl<'tag, 'reference> RenderBufferCanvas<'tag, 'reference>
-where
-    'tag: 'reference,
-{
+#[derive(Clone)]
+pub struct NoDefaultTag;
+
+#[derive(Clone)]
+pub struct ClonableTag<T: Tag + Clone>(T);
+
+impl<T: Tag> DefaultTag<T> for NoDefaultTag {
+    fn get(&self) -> Option<T> {
+        None
+    }
+}
+
+impl<T: Tag + Clone> DefaultTag<T> for ClonableTag<T> {
+    fn get(&self) -> Option<T> {
+        Some(self.0.clone())
+    }
+}
+
+pub struct RenderBufferCanvas<'reference, T: Tag, D: DefaultTag<T>> {
+    buffer: &'reference mut (dyn RenderBuffer<T> + 'reference),
+    start_position: RenderPosition,
+    position: RenderPosition,
+    default_tag: D,
+}
+
+impl<'reference, T: Tag, D: DefaultTag<T>> RenderBufferCanvas<'reference, T, D> {
     /// Writes the renderable to the current position, using the default_tag of the current canvas.
     ///
     /// Returns: `RenderBufferSummary` describing the start and end position.
     pub fn write<'a>(
         &'a mut self,
-        renderable: &dyn Renderable<'tag>,
+        renderable: &dyn Renderable<T, D>,
     ) -> Result<RenderBufferCanvasSummary, ()> {
-        let mut new_canvas: RenderBufferCanvas<'tag, 'a> = RenderBufferCanvas {
+        let mut new_canvas: RenderBufferCanvas<'a, T, D> = RenderBufferCanvas {
             buffer: &mut *self.buffer,
             position: self.position,
             start_position: self.position,
-            default_tag: self.default_tag,
+            default_tag: self.default_tag.clone(),
         };
 
         renderable.render_into(&mut new_canvas)?;
@@ -48,14 +68,17 @@ where
     /// Returns: `RenderBufferSummary` describing the start and end position.
     pub fn write_tagged(
         &mut self,
-        renderable: &dyn Renderable<'tag>,
-        default_tag: &'tag dyn Tag,
-    ) -> Result<RenderBufferCanvasSummary, ()> {
+        renderable: &dyn Renderable<T, ClonableTag<T>>,
+        default_tag: impl Into<T>,
+    ) -> Result<RenderBufferCanvasSummary, ()>
+    where
+        T: Clone,
+    {
         let mut new_canvas = RenderBufferCanvas {
             buffer: self.buffer,
             position: self.position,
             start_position: self.position,
-            default_tag: Some(default_tag),
+            default_tag: ClonableTag(default_tag.into()),
         };
 
         renderable.render_into(&mut new_canvas)?;
@@ -82,7 +105,7 @@ where
     ///
     /// Returns: `false` (and does not mutate the buffer) if the grapheme horizontally overflowed
     pub fn set_gph(&mut self, gph: &gph) -> bool {
-        let result = if let Some(tag) = self.default_tag {
+        let result = if let Some(tag) = self.default_tag.get() {
             self.buffer.set_tagged_cell(self.position, gph, tag)
         } else {
             self.buffer.set_untagged_cell(self.position, gph)
@@ -100,8 +123,8 @@ where
     /// Returns: `true` (and mutates the canvas) if the character is entirely within the horizontal bounds of the buffer
     ///
     /// Returns: `false` (and does not mutate the buffer) if the character horizontally overflowed
-    pub fn set_tagged_char(&mut self, char: char, tag: &'tag dyn Tag) -> bool {
-        self.set_tagged_gph(&CharGrapheme::from(char), tag)
+    pub fn set_tagged_char(&mut self, char: char, tag: impl Into<T>) -> bool {
+        self.set_tagged_gph(&CharGrapheme::from(char), tag.into())
     }
 
     /// Sets the grapheme at the canvas head using the provided tag.
@@ -109,8 +132,8 @@ where
     /// Returns: `true` (and mutates the canvas) if the grapheme is entirely within the horizontal bounds of the buffer
     ///
     /// Returns: `false` (and does not mutate the buffer) if the grapheme horizontally overflowed
-    pub fn set_tagged_gph(&mut self, gph: &gph, tag: &'tag dyn Tag) -> bool {
-        let result = self.buffer.set_tagged_cell(self.position, gph, tag);
+    pub fn set_tagged_gph(&mut self, gph: &gph, tag: impl Into<T>) -> bool {
+        let result = self.buffer.set_tagged_cell(self.position, gph, tag.into());
 
         if result {
             self.cursor_right();
