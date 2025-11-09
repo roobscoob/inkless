@@ -1,13 +1,19 @@
 use core::ops::ControlFlow;
 
-use crate::{grapheme::gph, tag::Tag};
+use crate::{grapheme::gph, renderable::RenderableError, tag::Tag};
 
 pub trait TagSink<T: Tag> {
-    type Result;
+    type Result: From<RenderableError>;
 
-    fn append_tagged(&mut self, grapheme: &gph, tag: T) -> ControlFlow<()>;
-    fn append(&mut self, grapheme: &gph) -> ControlFlow<()>;
+    fn append(&mut self, grapheme: &gph, tag: T) -> ControlFlow<()>;
+    fn gap(&mut self) -> ControlFlow<()>;
     fn finalize_line(&mut self) -> ControlFlow<()>;
 
     fn finalize(self) -> Self::Result;
+}
+
+impl<T, E: From<RenderableError>> From<RenderableError> for Result<T, E> {
+    fn from(v: RenderableError) -> Self {
+        Err(v.into())
+    }
 }

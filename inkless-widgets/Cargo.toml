@@ -1,0 +1,17 @@
+[package]
+name = "inkless-widgets"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+inkless-macros = { path = "../inkless-macros" }
+inkless-core = { path = "../inkless-core" }
+unicode-segmentation = { version = "1.12.0", features = ["no_std"] }
+num-traits = { version = "0.2.19", default-features = false, features = [
+    "i128",
+] }
+
+[features]
+default = ["std"]
+std = ["alloc"]
+alloc = []

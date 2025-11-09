@@ -1,6 +1,8 @@
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+use crate::canvas::AmbiguityPolicy;
+
 pub mod char;
 pub mod r#static;
 
@@ -9,6 +11,7 @@ pub mod grapheme;
 
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct gph(str);
 
 impl gph {
@@ -44,7 +47,14 @@ impl gph {
         self.0.len()
     }
 
-    pub fn width(&self) -> usize {
+    pub fn width(&self, policy: AmbiguityPolicy) -> usize {
+        match policy {
+            AmbiguityPolicy::Standard => self.width_normal(),
+            AmbiguityPolicy::Wide => self.width_cjk(),
+        }
+    }
+
+    pub fn width_normal(&self) -> usize {
         self.0.width()
     }
 

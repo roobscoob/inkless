@@ -9,3 +9,6 @@ pub mod utils;
 
 #[cfg(feature = "std")]
 pub mod std;
+
+#[cfg(feature = "alloc")]
+extern crate alloc;

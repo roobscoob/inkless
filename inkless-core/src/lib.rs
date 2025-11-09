@@ -10,4 +10,5 @@ pub mod grapheme;
 pub mod render_position;
 pub mod renderable;
 pub mod tag;
+pub mod theme;
 pub mod writer;

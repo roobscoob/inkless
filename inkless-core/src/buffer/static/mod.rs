@@ -1,29 +1,33 @@
+use core::fmt::Debug;
+
 use crate::{
     buffer::{RenderBuffer, RenderDispatcher},
-    canvas::{NoDefaultTag, ext::RenderBufferCanvasExt},
+    canvas::{AmbiguityPolicy, ext::RenderBufferCanvasExt},
     grapheme::{gph, r#static::StaticGrapheme},
     render_position::RenderPosition,
-    tag::Tag,
+    renderable::Renderable,
+    tag::{Tag, sink::TagSink},
 };
 
+#[derive(Debug)]
 pub struct StaticRenderBuffer<T: Tag, const CELLS: usize, const GRAPHEME_WIDTH: usize = 7> {
-    cells: [(StaticGrapheme<GRAPHEME_WIDTH>, Option<T>); CELLS],
+    cells: [Option<(T, StaticGrapheme<GRAPHEME_WIDTH>)>; CELLS],
     width: usize,
     offset: usize,
     lowest_written_line: usize,
+    ambiguity_policy: AmbiguityPolicy,
 }
 
 impl<T: Tag, const CELLS: usize, const GRAPHEME_WIDTH: usize>
     StaticRenderBuffer<T, CELLS, GRAPHEME_WIDTH>
 {
-    pub fn new(width: usize, offset: usize) -> Self {
+    pub fn new(width: usize, offset: usize, ambiguity_policy: AmbiguityPolicy) -> Self {
         Self {
-            cells: core::array::from_fn(|_| {
-                (StaticGrapheme::from_single_grapheme_str(" ").unwrap(), None)
-            }),
+            cells: core::array::from_fn(|_| None),
             width,
             offset,
             lowest_written_line: core::usize::MIN,
+            ambiguity_policy,
         }
     }
 
@@ -50,10 +54,10 @@ impl<T: Tag, const CELLS: usize, const GRAPHEME_WIDTH: usize> RenderBuffer<T>
     for StaticRenderBuffer<T, CELLS, GRAPHEME_WIDTH>
 {
     fn can_set_cell(&self, position: RenderPosition, c: &gph) -> bool {
-        position.column() + c.width() <= self.width
+        position.column() + c.width(self.ambiguity_policy()) <= self.width
     }
 
-    fn set_tagged_cell(&mut self, position: RenderPosition, c: &gph, tag: T) -> bool {
+    fn set_cell(&mut self, position: RenderPosition, c: &gph, tag: T) -> bool {
         if !self.can_set_cell(position, &c) {
             return false;
         }
@@ -63,54 +67,40 @@ impl<T: Tag, const CELLS: usize, const GRAPHEME_WIDTH: usize> RenderBuffer<T>
         }
 
         if let Some(idx) = self.index_of(position) {
-            self.cells[idx] = (StaticGrapheme::from_single_grapheme(c), Some(tag));
-            true
-        } else {
-            false
-        }
-    }
-
-    fn set_untagged_cell(&mut self, position: RenderPosition, c: &gph) -> bool {
-        if !self.can_set_cell(position, &c) {
-            return false;
+            self.cells[idx] = Some((tag, StaticGrapheme::from_single_grapheme(c)));
         }
 
-        if position.line() > self.lowest_written_line {
-            self.lowest_written_line = position.line();
-        }
-
-        if let Some(idx) = self.index_of(position) {
-            self.cells[idx] = (StaticGrapheme::from_single_grapheme(c), None);
-            true
-        } else {
-            false
-        }
+        true
     }
 
     fn width(&self) -> Option<usize> {
         Some(self.width)
     }
+
+    fn ambiguity_policy(&self) -> AmbiguityPolicy {
+        self.ambiguity_policy
+    }
 }
 
-impl<T: Tag, const CELLS: usize, const GRAPHEME_WIDTH: usize> RenderDispatcher<T>
-    for StaticRenderBuffer<T, CELLS, GRAPHEME_WIDTH>
+impl<T: Tag, const CELLS: usize, const GRAPHEME_WIDTH: usize, R: Renderable<T>>
+    RenderDispatcher<T, R> for StaticRenderBuffer<T, CELLS, GRAPHEME_WIDTH>
 {
-    fn render<
-        R: crate::renderable::Renderable<T, NoDefaultTag>,
-        S: crate::tag::sink::TagSink<T>,
-    >(
+    fn render<S: TagSink<T>>(
         sink: impl Into<S>,
         renderable: R,
         width: usize,
+        ambiguity_policy: AmbiguityPolicy,
     ) -> S::Result {
         let mut offset = 0;
         let mut sink = sink.into();
 
         loop {
-            let mut buffer = Self::new(width, offset);
+            let mut buffer = Self::new(width, offset, ambiguity_policy);
             let mut canvas = buffer.canvas_at(RenderPosition::zero());
 
-            renderable.render_into(&mut canvas).unwrap();
+            if let Err(e) = renderable.render_into(&mut canvas) {
+                return S::Result::from(e);
+            }
 
             if buffer.is_empty() {
                 break;
@@ -119,15 +109,24 @@ impl<T: Tag, const CELLS: usize, const GRAPHEME_WIDTH: usize> RenderDispatcher<T
             let count = buffer.width * buffer.height();
             let width = buffer.width;
             let height = buffer.height();
-            for (index, (grapheme, tag)) in buffer.cells.into_iter().enumerate() {
+            let mut skip_count = 0;
+
+            for (index, value) in buffer.cells.into_iter().enumerate() {
+                if skip_count > 0 {
+                    skip_count -= 1;
+                    continue;
+                }
+
                 if index >= count {
                     break;
                 }
 
-                let result = if let Some(tag) = tag {
-                    sink.append_tagged(&*grapheme, tag)
+                let result = if let Some((tag, grapheme)) = value {
+                    skip_count = grapheme.width(ambiguity_policy) - 1;
+
+                    sink.append(&*grapheme, tag)
                 } else {
-                    sink.append(&*grapheme)
+                    sink.gap()
                 };
 
                 match result {

@@ -36,7 +36,7 @@ pub enum UnderlineStyle {
     Dashed,
 }
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
 pub enum Intensity {
     Faint,
 
@@ -46,6 +46,7 @@ pub enum Intensity {
     Bold,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BlinkSpeed {
     Rapid,
     Slow,

@@ -2,7 +2,7 @@ use core::{num::NonZero, ops::Deref};
 
 use crate::grapheme::gph;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum StaticGrapheme<const GRAPHEME_WIDTH: usize = 7> {
     Overflowed,
     InBounds {
@@ -54,7 +54,7 @@ impl<const GRAPHEME_WIDTH: usize> Deref for StaticGrapheme<GRAPHEME_WIDTH> {
         match self {
             Self::Overflowed => UNICODE_REPLACEMENT_CHARACTER,
             Self::InBounds { length, contents } => unsafe {
-                gph::from_single_grapheme_utf8_unchecked(&contents[0..(length.get() - 1) as usize])
+                gph::from_single_grapheme_utf8_unchecked(&contents[0..(length.get()) as usize])
             },
         }
     }

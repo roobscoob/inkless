@@ -77,14 +77,16 @@ impl AnsiSupport {
             hyperlinks,
         }
     }
+}
 
-    pub fn from_env<'a>(env: AnsiEnv<'a>) -> AnsiSupport {
+impl<'a> From<AnsiEnv<'a>> for AnsiSupport {
+    fn from(env: AnsiEnv<'a>) -> Self {
         if !env.is_tty || env.term.is_some_and(|v| v == "dumb") {
             return AnsiSupport::none();
         }
 
-        let color = AnsiColorSupport::from_env(env);
-        let underline = AnsiUnderlineColorSupport::from_env(env, color);
+        let color = AnsiColorSupport::from(env);
+        let underline = AnsiUnderlineColorSupport::from(env, color);
         let hyperlinks = detect_hyperlink_support(env);
 
         Self {
@@ -95,8 +97,8 @@ impl AnsiSupport {
     }
 }
 
-impl AnsiColorSupport {
-    pub fn from_env<'a>(env: AnsiEnv<'a>) -> AnsiColorSupport {
+impl<'a> From<AnsiEnv<'a>> for AnsiColorSupport {
+    fn from(env: AnsiEnv<'a>) -> Self {
         if env
             .colorterm
             .is_some_and(|v| v.eq_ignore_ascii_case("truecolor") || v.eq_ignore_ascii_case("24bit"))
@@ -147,7 +149,7 @@ impl AnsiColorSupport {
 }
 
 impl AnsiUnderlineColorSupport {
-    pub fn from_env<'a>(env: AnsiEnv<'a>, color: AnsiColorSupport) -> Self {
+    pub fn from<'a>(env: AnsiEnv<'a>, color: AnsiColorSupport) -> Self {
         if matches!(color, AnsiColorSupport::None) {
             return AnsiUnderlineColorSupport::None;
         }

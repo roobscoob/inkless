@@ -1,4 +1,7 @@
-use inkless_core::tag::Tag;
+pub mod default;
+pub mod indirection;
+
+use inkless_core::tag::{Tag, untagged::Untagged};
 
 use crate::styles::{
     Ansi8Color, Ansi16Color, Ansi256Color, BlinkSpeed, Intensity, TrueColor, UnderlineStyle,
@@ -69,11 +72,19 @@ pub trait AnsiTag: Tag {
         false
     }
 
-    fn hyperlink_url(&self) -> Option<&str> {
+    fn hyperlink_url<'t>(&'t self) -> Option<&'t str>
+    where
+        Self: 't,
+    {
         None
     }
 
-    fn hyperlink_id(&self) -> Option<&str> {
+    fn hyperlink_id<'t>(&'t self) -> Option<&'t str>
+    where
+        Self: 't,
+    {
         None
     }
 }
+
+impl AnsiTag for Untagged {}

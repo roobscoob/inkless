@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+thiserror = { version = "2.0.17", default-features = false }
 unicode-segmentation = { version = "1.12.0", features = ["no_std"] }
 unicode-width = { version = "0.2.2", features = ["no_std"] }
 

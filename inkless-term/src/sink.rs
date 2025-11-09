@@ -1,6 +1,10 @@
 use core::ops::ControlFlow;
 
-use inkless_core::{grapheme::gph, tag::sink::TagSink, writer::character::CharacterWriter};
+use inkless_core::{
+    grapheme::gph, renderable::RenderableError, tag::sink::TagSink,
+    writer::character::CharacterWriter,
+};
+use thiserror::Error;
 
 use crate::{
     delta::{
@@ -13,14 +17,14 @@ use crate::{
     tag::AnsiTag,
 };
 
-pub struct Ansi<W: CharacterWriter, T: AnsiTag> {
+pub struct AnsiSink<W: CharacterWriter, T: AnsiTag> {
     pub(crate) writer: W,
     pub(crate) result: Result<(), W::Error>,
     pub(crate) support: AnsiSupport,
     pub(crate) last_tag: Option<T>,
 }
 
-impl<W: CharacterWriter, T: AnsiTag> Ansi<W, T> {
+impl<W: CharacterWriter, T: AnsiTag> AnsiSink<W, T> {
     fn append_internal(&mut self, grapheme: &gph, tag: Option<T>) -> Result<(), W::Error> {
         write_intensity_delta(&mut self.writer, self.last_tag.as_ref(), tag.as_ref())?;
         write_blink_delta(&mut self.writer, self.last_tag.as_ref(), tag.as_ref())?;
@@ -65,11 +69,17 @@ impl<W: CharacterWriter, T: AnsiTag> Ansi<W, T> {
     }
 }
 
-impl<W: CharacterWriter, T: AnsiTag> TagSink<T> for Ansi<W, T> {
-    type Result = Result<W, W::Error>;
+#[derive(Error, Debug)]
+pub enum PlaintextError<E> {
+    Renderable(#[from] RenderableError),
+    Writer(E),
+}
 
-    fn append(&mut self, grapheme: &gph) -> ControlFlow<()> {
-        self.result = self.append_internal(grapheme, None);
+impl<W: CharacterWriter, T: AnsiTag> TagSink<T> for AnsiSink<W, T> {
+    type Result = Result<W, PlaintextError<W::Error>>;
+
+    fn append(&mut self, grapheme: &gph, tag: T) -> ControlFlow<()> {
+        self.result = self.append_internal(grapheme, Some(tag));
 
         if self.result.is_err() {
             ControlFlow::Break(())
@@ -78,8 +88,8 @@ impl<W: CharacterWriter, T: AnsiTag> TagSink<T> for Ansi<W, T> {
         }
     }
 
-    fn append_tagged(&mut self, grapheme: &gph, tag: T) -> ControlFlow<()> {
-        self.result = self.append_internal(grapheme, Some(tag));
+    fn gap(&mut self) -> ControlFlow<()> {
+        self.result = self.writer.write_str(" ");
 
         if self.result.is_err() {
             ControlFlow::Break(())
@@ -100,12 +110,15 @@ impl<W: CharacterWriter, T: AnsiTag> TagSink<T> for Ansi<W, T> {
 
     fn finalize(mut self) -> Self::Result {
         if let Err(e) = self.result {
-            return Err(e);
+            return Err(PlaintextError::Writer(e));
         }
 
-        write_hyperlink_delta(&mut self.writer, self.support, self.last_tag.as_ref(), None)?;
+        write_hyperlink_delta(&mut self.writer, self.support, self.last_tag.as_ref(), None)
+            .map_err(|e| PlaintextError::Writer(e))?;
 
-        self.writer.write_str("\x1b[0m")?;
+        self.writer
+            .write_str("\x1b[0m")
+            .map_err(|e| PlaintextError::Writer(e))?;
 
         Ok(self.writer)
     }

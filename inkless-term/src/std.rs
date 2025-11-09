@@ -1,14 +1,16 @@
-use std::io::StdoutLock;
+use std::{io::StdoutLock, sync::LazyLock};
 
 use inkless_core::writer::character::CharacterWriter;
 
 use crate::{
-    sink::Ansi,
+    sink::AnsiSink,
     support::{AnsiEnv, AnsiSupport},
     tag::AnsiTag,
 };
 
-impl<'a> AnsiEnv<'a> {
+pub static ANSI_ENV: LazyLock<AnsiEnv<'static>> = LazyLock::new(AnsiEnv::from_env);
+
+impl AnsiEnv<'static> {
     pub fn from_env() -> Self {
         use std::env;
         use std::io;
@@ -62,11 +64,17 @@ impl<W: std::io::Write> CharacterWriter for IoWriter<W> {
     }
 }
 
-impl<'a, T: AnsiTag> Ansi<IoWriter<StdoutLock<'a>>, T> {
+impl AnsiSupport {
+    pub fn from_env() -> Self {
+        Self::from(*ANSI_ENV)
+    }
+}
+
+impl<'a, T: AnsiTag> AnsiSink<IoWriter<StdoutLock<'a>>, T> {
     pub fn stdout() -> Self {
         Self {
             result: Ok(()),
-            support: AnsiSupport::from_env(AnsiEnv::from_env()),
+            support: AnsiSupport::from_env(),
             writer: IoWriter(std::io::stdout().lock()),
             last_tag: None,
         }

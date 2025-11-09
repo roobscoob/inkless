@@ -3,6 +3,6 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-pub use inkless_core::*;
-pub use inkless_macros::*;
-pub use inkless_widgets::*;
+pub mod number;
+// pub mod plural_text;
+pub mod text;

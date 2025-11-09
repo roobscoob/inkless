@@ -24,9 +24,19 @@ pub fn gph(input: TokenStream) -> TokenStream {
         return syn::Error::new_spanned(lit, msg).to_compile_error().into();
     }
 
+    let root = if std::env::var("CARGO_CRATE_NAME")
+        .is_ok_and(|v| v.eq_ignore_ascii_case("inkless-core"))
+    {
+        quote!(crate)
+    } else if std::env::var("CARGO_CRATE_NAME").is_ok_and(|v| v.starts_with("inkless")) {
+        quote!(::inkless_core)
+    } else {
+        quote!(::inkless)
+    };
+
     let expanded = quote! {
         unsafe {
-            ::inkless_core::gph::from_single_grapheme_str_unchecked(#lit)
+            #root::grapheme::gph::from_single_grapheme_str_unchecked(#lit)
         }
     };
 

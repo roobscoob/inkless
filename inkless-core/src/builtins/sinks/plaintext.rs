@@ -1,7 +1,10 @@
 use core::ops::ControlFlow;
 
+use thiserror::Error;
+
 use crate::{
     grapheme::gph,
+    renderable::RenderableError,
     tag::{Tag, sink::TagSink},
     writer::character::CharacterWriter,
 };
@@ -20,10 +23,16 @@ impl<W: CharacterWriter> From<W> for Plaintext<W> {
     }
 }
 
-impl<W: CharacterWriter, T: Tag> TagSink<T> for Plaintext<W> {
-    type Result = Result<W, W::Error>;
+#[derive(Error, Debug)]
+pub enum PlaintextError<E> {
+    Renderable(#[from] RenderableError),
+    Writer(E),
+}
 
-    fn append(&mut self, grapheme: &gph) -> core::ops::ControlFlow<()> {
+impl<W: CharacterWriter, T: Tag> TagSink<T> for Plaintext<W> {
+    type Result = Result<W, PlaintextError<W::Error>>;
+
+    fn append(&mut self, grapheme: &gph, _: T) -> core::ops::ControlFlow<()> {
         self.result = self.writer.write_str(grapheme.as_str());
 
         if self.result.is_err() {
@@ -33,8 +42,8 @@ impl<W: CharacterWriter, T: Tag> TagSink<T> for Plaintext<W> {
         }
     }
 
-    fn append_tagged(&mut self, grapheme: &gph, _: T) -> ControlFlow<()> {
-        self.result = self.writer.write_str(grapheme.as_str());
+    fn gap(&mut self) -> ControlFlow<()> {
+        self.result = self.writer.write_str(" ");
 
         if self.result.is_err() {
             ControlFlow::Break(())
@@ -54,6 +63,8 @@ impl<W: CharacterWriter, T: Tag> TagSink<T> for Plaintext<W> {
     }
 
     fn finalize(self) -> Self::Result {
-        self.result.map(|_| self.writer)
+        self.result
+            .map_err(PlaintextError::Writer)
+            .map(|_| self.writer)
     }
 }
