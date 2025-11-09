@@ -42,7 +42,7 @@ pub fn render_segment_word_wrap<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>>(
 
         if chunk_fits_on_current_line(chunk, canvas) {
             for grapheme in gph::from_str(chunk) {
-                canvas.set_gph(grapheme, TextTag(tag.clone()));
+                canvas.set_gph(grapheme, TextTag::Segment(tag.clone()));
             }
 
             continue;
@@ -54,7 +54,7 @@ pub fn render_segment_word_wrap<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>>(
 
         if chunk_fits_on_current_line(chunk, canvas) {
             for grapheme in gph::from_str(chunk) {
-                canvas.set_gph(grapheme, TextTag(tag.clone()));
+                canvas.set_gph(grapheme, TextTag::Segment(tag.clone()));
             }
 
             continue;
@@ -63,9 +63,9 @@ pub fn render_segment_word_wrap<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>>(
         canvas.set_position(pre_move);
 
         for grapheme in gph::from_str(chunk) {
-            if !canvas.set_gph(grapheme, TextTag(tag.clone())) {
+            if !canvas.set_gph(grapheme, TextTag::Segment(tag.clone())) {
                 canvas.cursor_down().set_column(start.column());
-                canvas.set_gph(grapheme, TextTag(tag.clone()));
+                canvas.set_gph(grapheme, TextTag::Segment(tag.clone()));
             }
         }
     }

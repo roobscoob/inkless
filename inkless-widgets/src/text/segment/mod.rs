@@ -7,14 +7,19 @@ pub enum TextSegment<'l, T1: Tag, T2: Tag> {
     Segment(&'static str, &'l T1),
 }
 
-pub trait SegmentStore<T1: Tag, T2: Tag> {
-    type WithRenderable<R: Renderable<T2>>: SegmentStore<T1, T2>;
-    type WithSegment: SegmentStore<T1, T2>;
+pub trait SegmentStore<T1: Tag> {
+    type T2: Tag;
+
+    type WithRenderable<R: Renderable<Self::T2>>: SegmentStore<T1, T2 = Self::T2>;
+    type WithSegment: SegmentStore<T1>;
 
     fn len(&self) -> usize;
-    fn get<'a>(&'a self, index: usize) -> Option<TextSegment<'a, T1, T2>>;
-    fn with_renderable<R: Renderable<T2>>(self, value: R) -> Self::WithRenderable<R>;
+    fn with_renderable<R: Renderable<Self::T2>>(self, value: R) -> Self::WithRenderable<R>;
     fn with_segment(self, text: &'static str, tag: T1) -> Self::WithSegment;
+}
+
+pub trait SegmentStoreFetch<T1: Tag, T3: Tag>: SegmentStore<T1> {
+    fn get<'a>(&'a self, index: usize) -> Option<TextSegment<'a, T1, T3>>;
 }
 
 // impl<'l, T: Tag> Debug for TextSegment<'l, T> {

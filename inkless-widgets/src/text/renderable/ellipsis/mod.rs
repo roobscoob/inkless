@@ -21,21 +21,14 @@ use crate::text::{
 pub fn render_segment_ellipsis<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>>(
     text: &str,
     tag: &T1,
-    overflow_tag: Option<T1>,
     canvas: &mut RenderBufferCanvas<'_, T2>,
     start: RenderPosition,
     position: EllipsisPosition,
 ) {
     match position {
-        EllipsisPosition::Right => {
-            render_segment_ellipsis_right(text, tag, overflow_tag, canvas, start)
-        }
-        EllipsisPosition::Left => {
-            render_segment_ellipsis_left(text, tag, overflow_tag, canvas, start)
-        }
-        EllipsisPosition::Center => {
-            render_segment_ellipsis_center(text, tag, overflow_tag, canvas, start)
-        }
+        EllipsisPosition::Right => render_segment_ellipsis_right(text, tag, canvas, start),
+        EllipsisPosition::Left => render_segment_ellipsis_left(text, tag, canvas, start),
+        EllipsisPosition::Center => render_segment_ellipsis_center(text, tag, canvas, start),
     }
 }
 
@@ -193,7 +186,7 @@ pub(self) fn draw_line_full<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>>(
     canvas: &mut RenderBufferCanvas<'_, T2>,
 ) {
     for grapheme in gph::from_str(line) {
-        if !canvas.set_gph(grapheme, TextTag(tag.clone())) {
+        if !canvas.set_gph(grapheme, TextTag::Segment(tag.clone())) {
             break;
         }
     }
@@ -203,7 +196,6 @@ pub(self) fn draw_prefix_plus_ellipsis<T1: Tag + Clone, T2: Tag + From<TextTag<T
     line: &str,
     prefix_len: usize,
     tag: &T1,
-    overflow_tag: Option<T1>,
     canvas: &mut RenderBufferCanvas<'_, T2>,
 ) {
     let ell = gph!("…");
@@ -214,14 +206,14 @@ pub(self) fn draw_prefix_plus_ellipsis<T1: Tag + Clone, T2: Tag + From<TextTag<T
             break;
         }
 
-        if !canvas.set_gph(grapheme, TextTag(tag.clone())) {
+        if !canvas.set_gph(grapheme, TextTag::Segment(tag.clone())) {
             return;
         }
 
         idx += 1;
     }
 
-    let _ = canvas.set_gph(ell, TextTag(overflow_tag.unwrap_or_else(|| tag.clone())));
+    let _ = canvas.set_gph(ell, TextTag::Ellipsis(EllipsisPosition::Right));
 }
 
 pub(self) fn draw_ellipsis_plus_suffix<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>>(
@@ -229,18 +221,17 @@ pub(self) fn draw_ellipsis_plus_suffix<T1: Tag + Clone, T2: Tag + From<TextTag<T
     total_graphemes: usize,
     suffix_len: usize,
     tag: &T1,
-    overflow_tag: Option<T1>,
     canvas: &mut RenderBufferCanvas<'_, T2>,
 ) {
     let ell = gph!("…");
-    let _ = canvas.set_gph(ell, TextTag(overflow_tag.unwrap_or_else(|| tag.clone())));
+    let _ = canvas.set_gph(ell, TextTag::Ellipsis(EllipsisPosition::Left));
 
     let skip = total_graphemes.saturating_sub(suffix_len);
     let mut idx = 0;
 
     for grapheme in gph::from_str(line) {
         if idx >= skip {
-            if !canvas.set_gph(grapheme, TextTag(tag.clone())) {
+            if !canvas.set_gph(grapheme, TextTag::Segment(tag.clone())) {
                 return;
             }
         }
@@ -254,7 +245,6 @@ pub(super) fn draw_center<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>>(
     prefix_len: usize,
     suffix_len: usize,
     tag: &T1,
-    overflow_tag: Option<T1>,
     canvas: &mut RenderBufferCanvas<'_, T2>,
 ) {
     let ell = gph!("…");
@@ -266,7 +256,7 @@ pub(super) fn draw_center<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>>(
             break;
         }
 
-        if !canvas.set_gph(grapheme, TextTag(tag.clone())) {
+        if !canvas.set_gph(grapheme, TextTag::Segment(tag.clone())) {
             return;
         }
 
@@ -274,7 +264,7 @@ pub(super) fn draw_center<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>>(
     }
 
     // Ellipsis
-    if !canvas.set_gph(ell, TextTag(overflow_tag.unwrap_or_else(|| tag.clone()))) {
+    if !canvas.set_gph(ell, TextTag::Ellipsis(EllipsisPosition::Center)) {
         return;
     }
 
@@ -284,7 +274,7 @@ pub(super) fn draw_center<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>>(
 
     for grapheme in gph::from_str(line) {
         if idx >= suffix_start {
-            if !canvas.set_gph(grapheme, TextTag(tag.clone())) {
+            if !canvas.set_gph(grapheme, TextTag::Segment(tag.clone())) {
                 return;
             }
         }

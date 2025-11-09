@@ -12,7 +12,6 @@ use crate::text::renderable::{
 pub fn render_segment_ellipsis_left<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>>(
     text: &str,
     tag: &T1,
-    overflow_tag: Option<T1>,
     canvas: &mut RenderBufferCanvas<'_, T2>,
     start: RenderPosition,
 ) {
@@ -52,6 +51,6 @@ pub fn render_segment_ellipsis_left<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>
         }
 
         canvas.set_position(line_start);
-        draw_ellipsis_plus_suffix(line, total, best_suffix, tag, overflow_tag.clone(), canvas);
+        draw_ellipsis_plus_suffix(line, total, best_suffix, tag, canvas);
     }
 }

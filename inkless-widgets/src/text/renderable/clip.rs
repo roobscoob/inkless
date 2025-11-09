@@ -23,7 +23,7 @@ pub fn render_segment_clip<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>>(
         }
 
         // If this returns false, we silently drop the rest.
-        if !canvas.set_gph(grapheme, TextTag(tag.clone())) {
+        if !canvas.set_gph(grapheme, TextTag::Segment(tag.clone())) {
             return ControlFlow::Break(());
         }
     }

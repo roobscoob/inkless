@@ -1,37 +1,42 @@
+use core::marker::PhantomData;
+
 use inkless_core::{renderable::Renderable, tag::Tag};
 
-use crate::text::segment::{SegmentStore, TextSegment};
+use crate::text::segment::{SegmentStore, SegmentStoreFetch, TextSegment};
 
 #[derive(Default)]
-pub struct RecursiveSegmentStoreNone;
+pub struct RecursiveSegmentStoreNone<T2: Tag>(pub(crate) PhantomData<fn(T2) -> ()>);
 
-pub struct RecursiveSegmentStoreSomeRenderable<Tail, R> {
-    pub renderable: R,
-    pub tail: Tail,
+pub struct RecursiveSegmentStoreSomeRenderable<Tail, T2: Tag, R: Renderable<T2>> {
+    pub(crate) renderable: R,
+    pub(crate) tail: Tail,
+    pub(crate) _ph: PhantomData<fn(T2) -> ()>,
 }
 
-pub struct RecursiveSegmentStoreSomeSegment<T, Tail> {
-    pub segment: &'static str,
-    pub tag: T,
-    pub tail: Tail,
+pub struct RecursiveSegmentStoreSomeSegment<T1, T2, Tail> {
+    pub(crate) segment: &'static str,
+    pub(crate) tag: T1,
+    pub(crate) tail: Tail,
+    pub(crate) _ph: PhantomData<fn(T2) -> ()>,
 }
 
-impl<T1: Tag, T2: Tag> SegmentStore<T1, T2> for RecursiveSegmentStoreNone {
-    type WithRenderable<R: Renderable<T2>> = RecursiveSegmentStoreSomeRenderable<Self, R>;
-    type WithSegment = RecursiveSegmentStoreSomeSegment<T1, Self>;
+impl<T1: Tag, T2: Tag> SegmentStore<T1> for RecursiveSegmentStoreNone<T2> {
+    type T2 = T2;
+
+    type WithRenderable<R: Renderable<Self::T2>> =
+        RecursiveSegmentStoreSomeRenderable<Self, Self::T2, R>;
+
+    type WithSegment = RecursiveSegmentStoreSomeSegment<T1, T2, Self>;
 
     fn len(&self) -> usize {
         0
     }
 
-    fn get<'a>(&'a self, _: usize) -> Option<super::TextSegment<'a, T1, T2>> {
-        None
-    }
-
-    fn with_renderable<R: Renderable<T2>>(self, value: R) -> Self::WithRenderable<R> {
+    fn with_renderable<R: Renderable<Self::T2>>(self, value: R) -> Self::WithRenderable<R> {
         RecursiveSegmentStoreSomeRenderable {
             renderable: value,
             tail: self,
+            _ph: PhantomData::default(),
         }
     }
 
@@ -40,62 +45,82 @@ impl<T1: Tag, T2: Tag> SegmentStore<T1, T2> for RecursiveSegmentStoreNone {
             segment: text,
             tag,
             tail: self,
+            _ph: PhantomData::default(),
         }
     }
 }
 
-impl<T1: Tag, T2: Tag, Tail: SegmentStore<T1, T2>, R: Renderable<T2>> SegmentStore<T1, T2>
-    for RecursiveSegmentStoreSomeRenderable<Tail, R>
+impl<T1: Tag, T2: Tag, T3: Tag> SegmentStoreFetch<T1, T3> for RecursiveSegmentStoreNone<T2> {
+    fn get<'a>(&'a self, _: usize) -> Option<super::TextSegment<'a, T1, T3>> {
+        None
+    }
+}
+
+impl<T1: Tag, T2: Tag, Tail: SegmentStore<T1, T2 = T2>, R: Renderable<T2>> SegmentStore<T1>
+    for RecursiveSegmentStoreSomeRenderable<Tail, T2, R>
 {
-    type WithRenderable<R2: Renderable<T2>> = RecursiveSegmentStoreSomeRenderable<Self, R2>;
-    type WithSegment = RecursiveSegmentStoreSomeSegment<T1, Self>;
+    type T2 = T2;
+
+    type WithRenderable<R2: Renderable<Self::T2>> =
+        RecursiveSegmentStoreSomeRenderable<Self, Self::T2, R2>;
+
+    type WithSegment = RecursiveSegmentStoreSomeSegment<T1, T2, Self>;
 
     fn len(&self) -> usize {
         1 + self.tail.len()
     }
 
-    fn get<'a>(&'a self, index: usize) -> Option<super::TextSegment<'a, T1, T2>> {
+    fn with_renderable<R2: Renderable<Self::T2>>(self, value: R2) -> Self::WithRenderable<R2> {
+        RecursiveSegmentStoreSomeRenderable {
+            renderable: value,
+            tail: self,
+            _ph: PhantomData::default(),
+        }
+    }
+
+    fn with_segment(self, text: &'static str, tag: T1) -> Self::WithSegment {
+        RecursiveSegmentStoreSomeSegment {
+            segment: text,
+            tag,
+            tail: self,
+            _ph: PhantomData::default(),
+        }
+    }
+}
+
+impl<
+    T1: Tag,
+    T2: Tag,
+    T3: Tag,
+    Tail: SegmentStore<T1, T2 = T2> + SegmentStoreFetch<T1, T3>,
+    R: Renderable<T2> + Renderable<T3>,
+> SegmentStoreFetch<T1, T3> for RecursiveSegmentStoreSomeRenderable<Tail, T2, R>
+{
+    fn get<'a>(&'a self, index: usize) -> Option<super::TextSegment<'a, T1, T3>> {
         (index == self.tail.len())
             .then_some(Some(TextSegment::Renderable(&self.renderable)))
             .unwrap_or_else(|| self.tail.get(index))
     }
-
-    fn with_renderable<R2: Renderable<T2>>(self, value: R2) -> Self::WithRenderable<R2> {
-        RecursiveSegmentStoreSomeRenderable {
-            renderable: value,
-            tail: self,
-        }
-    }
-
-    fn with_segment(self, text: &'static str, tag: T1) -> Self::WithSegment {
-        RecursiveSegmentStoreSomeSegment {
-            segment: text,
-            tag,
-            tail: self,
-        }
-    }
 }
 
-impl<T1: Tag, T2: Tag, Tail: SegmentStore<T1, T2>> SegmentStore<T1, T2>
-    for RecursiveSegmentStoreSomeSegment<T1, Tail>
+impl<T1: Tag, T2: Tag, Tail: SegmentStore<T1, T2 = T2>> SegmentStore<T1>
+    for RecursiveSegmentStoreSomeSegment<T1, T2, Tail>
 {
-    type WithRenderable<R2: Renderable<T2>> = RecursiveSegmentStoreSomeRenderable<Self, R2>;
-    type WithSegment = RecursiveSegmentStoreSomeSegment<T1, Self>;
+    type T2 = T2;
+
+    type WithRenderable<R2: Renderable<T2>> = RecursiveSegmentStoreSomeRenderable<Self, T2, R2>;
+
+    type WithSegment = RecursiveSegmentStoreSomeSegment<T1, T2, Self>;
 
     fn len(&self) -> usize {
         1 + self.tail.len()
     }
 
-    fn get<'a>(&'a self, index: usize) -> Option<super::TextSegment<'a, T1, T2>> {
-        (index == self.tail.len())
-            .then_some(Some(TextSegment::Segment(self.segment, &self.tag)))
-            .unwrap_or_else(|| self.tail.get(index))
-    }
-
-    fn with_renderable<R2: Renderable<T2>>(self, value: R2) -> Self::WithRenderable<R2> {
+    fn with_renderable<R2: Renderable<Self::T2>>(self, value: R2) -> Self::WithRenderable<R2> {
         RecursiveSegmentStoreSomeRenderable {
             renderable: value,
             tail: self,
+            _ph: PhantomData::default(),
         }
     }
 
@@ -104,6 +129,17 @@ impl<T1: Tag, T2: Tag, Tail: SegmentStore<T1, T2>> SegmentStore<T1, T2>
             segment: text,
             tag,
             tail: self,
+            _ph: PhantomData::default(),
         }
+    }
+}
+
+impl<T1: Tag, T2: Tag, T3: Tag, Tail: SegmentStore<T1, T2 = T2> + SegmentStoreFetch<T1, T3>>
+    SegmentStoreFetch<T1, T3> for RecursiveSegmentStoreSomeSegment<T1, T2, Tail>
+{
+    fn get<'a>(&'a self, index: usize) -> Option<super::TextSegment<'a, T1, T3>> {
+        (index == self.tail.len())
+            .then_some(Some(TextSegment::Segment(self.segment, &self.tag)))
+            .unwrap_or_else(|| self.tail.get(index))
     }
 }

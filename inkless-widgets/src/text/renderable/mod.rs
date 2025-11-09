@@ -12,27 +12,16 @@ use inkless_core::{
 
 use crate::text::{
     Text,
-    overflow::{Overflow, OverflowTag},
+    overflow::Overflow,
     renderable::{
         clip::render_segment_clip, ellipsis::render_segment_ellipsis,
         grapheme_wrap::render_segment_grapheme_wrap, word_wrap::render_segment_word_wrap,
     },
-    segment::{SegmentStore, TextSegment},
+    segment::{SegmentStore, SegmentStoreFetch, TextSegment},
+    tag::TextTag,
 };
 
 struct OverflowError;
-
-#[derive(Clone)]
-pub struct TextTag<T: Tag + Clone>(T);
-
-impl<Ot: Tag, Th: Theme<Ot>, Tt: Tag + Clone> From<TextTag<Tt>> for ThemedTag<Ot, Th>
-where
-    Th::Result: From<Tt>,
-{
-    fn from(value: TextTag<Tt>) -> Self {
-        ThemedTag::from_result(value.0.into())
-    }
-}
 
 impl core::error::Error for OverflowError {
     fn description(&self) -> &str {
@@ -56,14 +45,13 @@ impl core::fmt::Debug for OverflowError {
 
 impl<
     T1: Tag + Clone,
-    T2: Tag + From<TextTag<T1>>,
-    S: SegmentStore<T1, T2>,
-    O: OverflowTag<Tag = T1>,
-> Renderable<T2> for Text<S, O>
+    S: SegmentStore<T1> + SegmentStoreFetch<T1, T3>,
+    T3: Tag + From<TextTag<T1>> + From<S::T2>,
+> Renderable<T3> for Text<S, T1>
 {
     fn render_into<'buffer_reference>(
         &self,
-        canvas: &mut RenderBufferCanvas<'buffer_reference, T2>,
+        canvas: &mut RenderBufferCanvas<'buffer_reference, T3>,
     ) -> Result<(), RenderableError> {
         let start = canvas.get_position();
 
@@ -93,15 +81,8 @@ impl<
                             render_segment_word_wrap(text, tag, canvas, start);
                         }
 
-                        Overflow::Ellipsis(position, overflow) => {
-                            render_segment_ellipsis(
-                                text,
-                                tag,
-                                overflow.take_tag(),
-                                canvas,
-                                start,
-                                *position,
-                            );
+                        Overflow::Ellipsis(position) => {
+                            render_segment_ellipsis(text, tag, canvas, start, *position);
                         }
 
                         Overflow::Error => {

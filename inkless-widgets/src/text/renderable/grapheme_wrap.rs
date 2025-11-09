@@ -17,10 +17,10 @@ pub fn render_segment_grapheme_wrap<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>
             continue;
         }
 
-        if !canvas.set_gph(grapheme, TextTag(tag.clone())) {
+        if !canvas.set_gph(grapheme, TextTag::Segment(tag.clone())) {
             // Try the same grapheme on the next line, same starting column.
             canvas.cursor_down().set_column(start.column());
-            if !canvas.set_gph(grapheme, TextTag(tag.clone())) {
+            if !canvas.set_gph(grapheme, TextTag::Segment(tag.clone())) {
                 // No vertical space either; give up on this segment.
                 break;
             }
