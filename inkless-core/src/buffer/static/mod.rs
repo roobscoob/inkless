@@ -86,13 +86,12 @@ impl<'a, T: Tag + 'a, const CELLS: usize, const GRAPHEME_WIDTH: usize, R: Render
     RenderDispatcher<T, R> for StaticRenderBuffer<T, CELLS, GRAPHEME_WIDTH>
 {
     fn render<S: TagSink<T>>(
-        sink: impl Into<S>,
+        mut sink: S,
         renderable: R,
         width: usize,
         ambiguity_policy: AmbiguityPolicy,
     ) -> S::Result {
         let mut offset = 0;
-        let mut sink = sink.into();
 
         loop {
             let mut buffer = Self::new(width, offset, ambiguity_policy);

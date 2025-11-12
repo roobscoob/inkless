@@ -48,6 +48,6 @@ pub fn main() {
         .with_component(n_b16_sep)
         .with_theme::<DemoTheme>();
 
-    B::render::<AnsiSink<_, _>>(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard).unwrap();
+    B::render(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard).unwrap();
     println!("");
 }

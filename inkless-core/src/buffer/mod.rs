@@ -31,7 +31,7 @@ pub trait RenderBuffer<T: Tag> {
 
 pub trait RenderDispatcher<T: Tag, R: Renderable<T>> {
     fn render<S: TagSink<T>>(
-        sink: impl Into<S>,
+        sink: S,
         renderable: R,
         width: usize,
         ambiguity_policy: AmbiguityPolicy,

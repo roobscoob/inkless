@@ -1,7 +1,7 @@
 use inkless::{
     buffer::{RenderDispatcher, r#static::StaticRenderBuffer},
     canvas::AmbiguityPolicy,
-    text::{EllipsisMethods, Text, overflow::EllipsisPosition},
+    text::{Text, TextWithRenderable},
 };
 use inkless_term::{
     sink::AnsiSink,
@@ -35,36 +35,30 @@ pub fn main() {
     // .ellipsis_tagged_at(EllipsisPosition::Right, Ansi::plain().bright_black());
 
     let debug = Text::of("Clip:              ").with_component(clip);
-    B::render::<AnsiSink<_, Ansi>>(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard)
-        .unwrap();
+    B::render(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard).unwrap();
     println!("");
 
     let debug = Text::of("Grapheme Wrap:     ").with_component(grapheme_wrap);
-    B::render::<AnsiSink<_, Ansi>>(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard)
-        .unwrap();
+    B::render(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard).unwrap();
     println!("");
 
     let debug = Text::of("Word Wrap:         ").with_component(word_wrap);
-    B::render::<AnsiSink<_, Ansi>>(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard)
-        .unwrap();
+    B::render(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard).unwrap();
     println!("");
 
     let debug = Text::of("Ellipsis (Left):   ").with_component(ellipsis_left);
-    B::render::<AnsiSink<_, Ansi>>(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard)
-        .unwrap();
+    B::render(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard).unwrap();
     println!("");
 
     let debug = Text::of_tagged("Ellipsis (Center): ", PLAIN).with_component(ellipsis_center);
-    B::render::<AnsiSink<_, _>>(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard).unwrap();
+    B::render(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard).unwrap();
     println!("");
 
     let debug = Text::of("Ellipsis (Right):  ").with_component(ellipsis_right);
-    B::render::<AnsiSink<_, Ansi>>(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard)
-        .unwrap();
+    B::render(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard).unwrap();
     println!("");
 
     let debug = Text::of("Yappanese:         ").with_component(yappanese);
-    B::render::<AnsiSink<_, Ansi>>(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard)
-        .unwrap();
+    B::render(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard).unwrap();
     println!("");
 }

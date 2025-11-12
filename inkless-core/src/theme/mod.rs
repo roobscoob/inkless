@@ -1,5 +1,6 @@
 pub mod canvas;
 pub mod ext;
+pub mod clean;
 
 use crate::tag::Tag;
 
