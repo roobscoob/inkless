@@ -82,7 +82,7 @@ impl<T: Tag, const CELLS: usize, const GRAPHEME_WIDTH: usize> RenderBuffer<T>
     }
 }
 
-impl<T: Tag, const CELLS: usize, const GRAPHEME_WIDTH: usize, R: Renderable<T>>
+impl<'a, T: Tag + 'a, const CELLS: usize, const GRAPHEME_WIDTH: usize, R: Renderable<T>>
     RenderDispatcher<T, R> for StaticRenderBuffer<T, CELLS, GRAPHEME_WIDTH>
 {
     fn render<S: TagSink<T>>(

@@ -3,7 +3,7 @@ use core::{
     fmt::{Debug, Display},
 };
 
-use crate::{canvas::RenderBufferCanvas, tag::Tag};
+use crate::{canvas::Canvas, tag::Tag};
 
 pub trait RenderContext {
     fn handle_error<'b>(&'b mut self, error: &'b dyn core::error::Error);
@@ -12,14 +12,14 @@ pub trait RenderContext {
 pub trait Renderable<T: Tag> {
     fn render_into<'buffer_reference>(
         &self,
-        canvas: &mut RenderBufferCanvas<'buffer_reference, T>,
+        canvas: &mut dyn Canvas<T>,
     ) -> Result<(), RenderableError>;
 }
 
 impl<'a, T: Tag, O: Renderable<T>> Renderable<T> for &'a O {
     fn render_into<'buffer_reference>(
         &self,
-        canvas: &mut RenderBufferCanvas<'buffer_reference, T>,
+        canvas: &mut dyn Canvas<T>,
     ) -> Result<(), RenderableError> {
         (**self).render_into(canvas)
     }

@@ -1,5 +1,6 @@
 use crate::{
-    buffer::RenderBuffer, canvas::RenderBufferCanvas, render_position::RenderPosition, tag::Tag,
+    buffer::RenderBuffer, canvas::buffer::RenderBufferCanvas, render_position::RenderPosition,
+    tag::Tag,
 };
 
 pub trait RenderBufferCanvasExt<T: Tag> {

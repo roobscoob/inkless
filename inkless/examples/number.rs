@@ -70,7 +70,9 @@ pub fn main() {
     // B::render::<AnsiSink<_, _>>(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard).unwrap();
     // println!("");
 
-    let debug = Text::of("Negative Hex Number With Separator: ").with_component(n_b16_sep);
+    let debug = Text::of::<Untagged>("Negative Hex Number With Separator: ")
+        .with_component::<Untagged>(n_b16_sep);
+
     B::render::<AnsiSink<_, _>>(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard).unwrap();
     println!("");
 }
