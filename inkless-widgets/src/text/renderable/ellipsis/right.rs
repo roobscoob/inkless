@@ -1,4 +1,4 @@
-use inkless_core::{canvas::RenderBufferCanvas, render_position::RenderPosition, tag::Tag};
+use inkless_core::{canvas::Canvas, render_position::RenderPosition, tag::Tag};
 use inkless_macros::gph;
 
 use crate::text::renderable::{
@@ -9,10 +9,10 @@ use crate::text::renderable::{
     },
 };
 
-pub fn render_segment_ellipsis_right<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>>(
+pub fn render_segment_ellipsis_right<T1: Tag + Clone, T2: Tag, T3: Tag + From<TextTag<T1, T2>>>(
     text: &str,
     tag: &T1,
-    canvas: &mut RenderBufferCanvas<'_, T2>,
+    canvas: &mut dyn Canvas<T3>,
     start: RenderPosition,
 ) {
     let ell = gph!("…");

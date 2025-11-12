@@ -2,9 +2,7 @@ pub mod center;
 pub mod left;
 pub mod right;
 
-use inkless_core::{
-    canvas::RenderBufferCanvas, grapheme::gph, render_position::RenderPosition, tag::Tag,
-};
+use inkless_core::{canvas::Canvas, grapheme::gph, render_position::RenderPosition, tag::Tag};
 use inkless_macros::gph;
 
 use crate::text::{
@@ -18,10 +16,10 @@ use crate::text::{
     },
 };
 
-pub fn render_segment_ellipsis<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>>(
+pub fn render_segment_ellipsis<T1: Tag + Clone, T2: Tag, T3: Tag + From<TextTag<T1, T2>>>(
     text: &str,
     tag: &T1,
-    canvas: &mut RenderBufferCanvas<'_, T2>,
+    canvas: &mut dyn Canvas<T3>,
     start: RenderPosition,
     position: EllipsisPosition,
 ) {
@@ -42,7 +40,7 @@ pub(self) fn count_graphemes(text: &str) -> usize {
 
 pub(self) fn line_fits_without_ellipsis<T: Tag>(
     line: &str,
-    canvas: &mut RenderBufferCanvas<'_, T>,
+    canvas: &mut dyn Canvas<T>,
     start: RenderPosition,
 ) -> bool {
     let saved = canvas.get_position();
@@ -62,7 +60,7 @@ pub(self) fn line_fits_without_ellipsis<T: Tag>(
 pub(self) fn prefix_plus_ellipsis_fits<T: Tag>(
     line: &str,
     prefix_len: usize,
-    canvas: &mut RenderBufferCanvas<'_, T>,
+    canvas: &mut dyn Canvas<T>,
     start: RenderPosition,
     ell: &gph,
 ) -> bool {
@@ -97,7 +95,7 @@ pub(self) fn ellipsis_plus_suffix_fits<T: Tag>(
     line: &str,
     total_graphemes: usize,
     suffix_len: usize,
-    canvas: &mut RenderBufferCanvas<'_, T>,
+    canvas: &mut dyn Canvas<T>,
     start: RenderPosition,
     ell: &gph,
 ) -> bool {
@@ -135,7 +133,7 @@ pub(self) fn center_candidate_fits<T: Tag>(
     total_graphemes: usize,
     prefix_len: usize,
     suffix_len: usize,
-    canvas: &mut RenderBufferCanvas<'_, T>,
+    canvas: &mut dyn Canvas<T>,
     start: RenderPosition,
     ell: &gph,
 ) -> bool {
@@ -180,23 +178,27 @@ pub(self) fn center_candidate_fits<T: Tag>(
     true
 }
 
-pub(self) fn draw_line_full<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>>(
+pub(self) fn draw_line_full<T1: Tag + Clone, T2: Tag, T3: Tag + From<TextTag<T1, T2>>>(
     line: &str,
     tag: &T1,
-    canvas: &mut RenderBufferCanvas<'_, T2>,
+    canvas: &mut dyn Canvas<T3>,
 ) {
     for grapheme in gph::from_str(line) {
-        if !canvas.set_gph(grapheme, TextTag::Segment(tag.clone())) {
+        if !canvas.set_gph(grapheme, TextTag::Segment(tag.clone()).into()) {
             break;
         }
     }
 }
 
-pub(self) fn draw_prefix_plus_ellipsis<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>>(
+pub(self) fn draw_prefix_plus_ellipsis<
+    T1: Tag + Clone,
+    T2: Tag,
+    T3: Tag + From<TextTag<T1, T2>>,
+>(
     line: &str,
     prefix_len: usize,
     tag: &T1,
-    canvas: &mut RenderBufferCanvas<'_, T2>,
+    canvas: &mut dyn Canvas<T3>,
 ) {
     let ell = gph!("…");
 
@@ -206,32 +208,36 @@ pub(self) fn draw_prefix_plus_ellipsis<T1: Tag + Clone, T2: Tag + From<TextTag<T
             break;
         }
 
-        if !canvas.set_gph(grapheme, TextTag::Segment(tag.clone())) {
+        if !canvas.set_gph(grapheme, TextTag::Segment(tag.clone()).into()) {
             return;
         }
 
         idx += 1;
     }
 
-    let _ = canvas.set_gph(ell, TextTag::Ellipsis(EllipsisPosition::Right));
+    let _ = canvas.set_gph(ell, TextTag::Ellipsis(EllipsisPosition::Right).into());
 }
 
-pub(self) fn draw_ellipsis_plus_suffix<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>>(
+pub(self) fn draw_ellipsis_plus_suffix<
+    T1: Tag + Clone,
+    T2: Tag,
+    T3: Tag + From<TextTag<T1, T2>>,
+>(
     line: &str,
     total_graphemes: usize,
     suffix_len: usize,
     tag: &T1,
-    canvas: &mut RenderBufferCanvas<'_, T2>,
+    canvas: &mut dyn Canvas<T3>,
 ) {
     let ell = gph!("…");
-    let _ = canvas.set_gph(ell, TextTag::Ellipsis(EllipsisPosition::Left));
+    let _ = canvas.set_gph(ell, TextTag::Ellipsis(EllipsisPosition::Left).into());
 
     let skip = total_graphemes.saturating_sub(suffix_len);
     let mut idx = 0;
 
     for grapheme in gph::from_str(line) {
         if idx >= skip {
-            if !canvas.set_gph(grapheme, TextTag::Segment(tag.clone())) {
+            if !canvas.set_gph(grapheme, TextTag::Segment(tag.clone()).into()) {
                 return;
             }
         }
@@ -239,13 +245,13 @@ pub(self) fn draw_ellipsis_plus_suffix<T1: Tag + Clone, T2: Tag + From<TextTag<T
     }
 }
 
-pub(super) fn draw_center<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>>(
+pub(super) fn draw_center<T1: Tag + Clone, T2: Tag, T3: Tag + From<TextTag<T1, T2>>>(
     line: &str,
     total_graphemes: usize,
     prefix_len: usize,
     suffix_len: usize,
     tag: &T1,
-    canvas: &mut RenderBufferCanvas<'_, T2>,
+    canvas: &mut dyn Canvas<T3>,
 ) {
     let ell = gph!("…");
 
@@ -256,7 +262,7 @@ pub(super) fn draw_center<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>>(
             break;
         }
 
-        if !canvas.set_gph(grapheme, TextTag::Segment(tag.clone())) {
+        if !canvas.set_gph(grapheme, TextTag::Segment(tag.clone()).into()) {
             return;
         }
 
@@ -264,7 +270,7 @@ pub(super) fn draw_center<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>>(
     }
 
     // Ellipsis
-    if !canvas.set_gph(ell, TextTag::Ellipsis(EllipsisPosition::Center)) {
+    if !canvas.set_gph(ell, TextTag::Ellipsis(EllipsisPosition::Center).into()) {
         return;
     }
 
@@ -274,7 +280,7 @@ pub(super) fn draw_center<T1: Tag + Clone, T2: Tag + From<TextTag<T1>>>(
 
     for grapheme in gph::from_str(line) {
         if idx >= suffix_start {
-            if !canvas.set_gph(grapheme, TextTag::Segment(tag.clone())) {
+            if !canvas.set_gph(grapheme, TextTag::Segment(tag.clone()).into()) {
                 return;
             }
         }

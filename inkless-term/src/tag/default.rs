@@ -1,4 +1,4 @@
-use inkless_core::tag::Tag;
+use inkless_core::tag::{Tag, untagged::Untagged};
 
 use crate::{
     styles::{
@@ -373,5 +373,11 @@ impl AnsiTag for Ansi {
 
     fn is_strikethrough(&self) -> bool {
         self.strikethrough
+    }
+}
+
+impl From<Untagged> for Ansi {
+    fn from(value: Untagged) -> Self {
+        Self::default()
     }
 }

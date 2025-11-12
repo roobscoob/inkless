@@ -14,13 +14,17 @@ pub struct ThemedRenderable<Ot: Tag, Th: Theme<Ot>, R: ?Sized + Renderable<Ot>>(
 );
 
 pub trait RenderableThemeExt<Ot: Tag>: Renderable<Ot> {
-    fn theme<'a, Th: Theme<Ot>>(&'a self) -> &'a ThemedRenderable<Ot, Th, Self>
+    fn as_theme<'a, Th: Theme<Ot>>(&'a self) -> &'a ThemedRenderable<Ot, Th, Self>
+    where
+        Self: Renderable<Ot>;
+
+    fn with_theme<'a, Th: Theme<Ot>>(self) -> ThemedRenderable<Ot, Th, Self>
     where
         Self: Renderable<Ot>;
 }
 
 impl<T: Tag, R: Renderable<T>> RenderableThemeExt<T> for R {
-    fn theme<'a, Th: Theme<T>>(&'a self) -> &'a ThemedRenderable<T, Th, Self>
+    fn as_theme<'a, Th: Theme<T>>(&'a self) -> &'a ThemedRenderable<T, Th, Self>
     where
         Self: Renderable<T>,
     {
@@ -29,6 +33,13 @@ impl<T: Tag, R: Renderable<T>> RenderableThemeExt<T> for R {
         // have the same layout and metadata. Additionally, the type requires
         // `Self: Renderable<ThemedTag<T, Th>>`, which is enforced by this `where` clause.
         unsafe { &*(self as *const Self as *const ThemedRenderable<T, Th, Self>) }
+    }
+
+    fn with_theme<'a, Th: Theme<T>>(self) -> ThemedRenderable<T, Th, Self>
+    where
+        Self: Renderable<T>,
+    {
+        ThemedRenderable(Default::default(), self)
     }
 }
 

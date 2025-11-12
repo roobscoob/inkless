@@ -34,7 +34,7 @@ impl<S, T: Tag> Text<S, T> {
     }
 }
 
-impl<T2: Tag, _T: Tag> Text<RecursiveSegmentStoreNone<T2>, _T> {
+impl<T2: Tag> Text<RecursiveSegmentStoreNone<T2>, Untagged> {
     pub fn empty<T: Tag>() -> Text<RecursiveSegmentStoreNone<T2>, T> {
         Text::from_store(RecursiveSegmentStoreNone(Default::default()))
     }

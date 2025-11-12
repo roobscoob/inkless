@@ -4,10 +4,9 @@ pub mod grapheme_wrap;
 pub mod word_wrap;
 
 use inkless_core::{
-    canvas::RenderBufferCanvas,
+    canvas::{Canvas, into::IntoCanvas},
     renderable::{Renderable, RenderableError},
     tag::Tag,
-    theme::{Theme, ThemedTag},
 };
 
 use crate::text::{
@@ -43,15 +42,12 @@ impl core::fmt::Debug for OverflowError {
     }
 }
 
-impl<
-    T1: Tag + Clone,
-    S: SegmentStore<T1> + SegmentStoreFetch<T1, T3>,
-    T3: Tag + From<TextTag<T1>> + From<S::T2>,
-> Renderable<T3> for Text<S, T1>
+impl<T1: Tag + Clone, S: SegmentStore<T1> + SegmentStoreFetch<T1, T3>, T3: Tag>
+    Renderable<TextTag<T1, T3>> for Text<S, T1>
 {
     fn render_into<'buffer_reference>(
         &self,
-        canvas: &mut RenderBufferCanvas<'buffer_reference, T3>,
+        canvas: &mut dyn Canvas<TextTag<T1, T3>>,
     ) -> Result<(), RenderableError> {
         let start = canvas.get_position();
 
@@ -64,7 +60,7 @@ impl<
             match segment {
                 TextSegment::Renderable(r) => {
                     // Delegate to nested renderable as before.
-                    canvas.write(r)?;
+                    IntoCanvas::new(canvas).write(r)?;
                 }
                 TextSegment::Segment(text, tag) => {
                     match &self.overflow_behavior {

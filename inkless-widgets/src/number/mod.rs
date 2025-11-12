@@ -1,7 +1,7 @@
 use core::ops::{Div, Rem, Sub};
 
 use inkless_core::{
-    canvas::RenderBufferCanvas,
+    canvas::Canvas,
     grapheme::gph,
     renderable::{Renderable, RenderableError},
     tag::Tag,
@@ -87,7 +87,7 @@ where
 {
     fn render_into<'buffer_reference>(
         &self,
-        canvas: &mut RenderBufferCanvas<'buffer_reference, T>,
+        canvas: &mut dyn Canvas<T>,
     ) -> Result<(), RenderableError> {
         let start = canvas.get_position();
 
@@ -132,18 +132,18 @@ where
 
         // 1. Render sign if needed.
         if negative {
-            if !canvas.set_gph(MINUS, NumberTag::Minus) {
+            if !canvas.set_gph(MINUS, NumberTag::Minus.into()) {
                 canvas.cursor_down().set_column(start.column());
-                canvas.set_gph(MINUS, NumberTag::Minus);
+                canvas.set_gph(MINUS, NumberTag::Minus.into());
             }
         }
 
         // 2. Render prefix, if present.
         if let Some(prefix) = &self.prefix {
             for (i, g) in gph::from_str(prefix).enumerate() {
-                if !canvas.set_gph(g, NumberTag::Prefix { index: i }) {
+                if !canvas.set_gph(g, NumberTag::Prefix { index: i }.into()) {
                     canvas.cursor_down().set_column(start.column());
-                    canvas.set_gph(g, NumberTag::Prefix { index: i });
+                    canvas.set_gph(g, NumberTag::Prefix { index: i }.into());
                 }
             }
         }
@@ -169,9 +169,14 @@ where
                 if j != len - 1 {
                     let prev_pos_from_right = j + 1;
                     if prev_pos_from_right % sep_cfg.every == 0 {
-                        if !canvas.set_gph(sep_cfg.glyph, NumberTag::Separator { index: sep_i }) {
+                        if !canvas
+                            .set_gph(sep_cfg.glyph, NumberTag::Separator { index: sep_i }.into())
+                        {
                             canvas.cursor_down().set_column(start.column());
-                            canvas.set_gph(sep_cfg.glyph, NumberTag::Separator { index: sep_i });
+                            canvas.set_gph(
+                                sep_cfg.glyph,
+                                NumberTag::Separator { index: sep_i }.into(),
+                            );
                         }
 
                         sep_i += 1;
@@ -186,7 +191,8 @@ where
                 NumberTag::Digit {
                     index: i,
                     value: digits[j],
-                },
+                }
+                .into(),
             ) {
                 canvas.cursor_down().set_column(start.column());
                 canvas.set_gph(
@@ -194,7 +200,8 @@ where
                     NumberTag::Digit {
                         index: i,
                         value: digits[j],
-                    },
+                    }
+                    .into(),
                 );
             }
         }

@@ -3,11 +3,14 @@ use inkless::{
     canvas::AmbiguityPolicy,
     gph,
     number::{Number, tag::NumberTag},
-    tag::untagged::Untagged,
+    tag::{Tag, untagged::Untagged},
     text::{Text, TextWithRenderable, tag::TextTag},
-    theme::{Theme, ext::RenderableThemeExt},
+    theme::{
+        Theme,
+        ext::{RenderableThemeExt, ThemedRenderable},
+    },
 };
-use inkless_term::{sink::AnsiSink, styles::TrueColor, tag::default::Ansi};
+use inkless_term::{sink::AnsiSink, tag::default::Ansi};
 
 const W: usize = 45;
 type B<T> = StaticRenderBuffer<T, W>;
@@ -18,60 +21,32 @@ impl Theme<NumberTag> for DemoTheme {
     type Result = Ansi;
 
     fn translate(from: NumberTag) -> Self::Result {
-        Ansi::plain().bg_red()
+        Ansi::plain().red()
     }
 }
 
-impl Theme<TextTag<Ansi>> for DemoTheme {
+impl<A: Tag + Clone + Into<Ansi>, B: Tag + Into<Ansi>> Theme<TextTag<A, B>> for DemoTheme {
     type Result = Ansi;
 
-    fn translate(from: TextTag<Ansi>) -> Self::Result {
+    fn translate(from: TextTag<A, B>) -> Self::Result {
         match from {
             TextTag::Ellipsis(e) => Ansi::new().bright_black(),
-            TextTag::Segment(s) => s,
+            TextTag::Component(c) => c.into(),
+            TextTag::Segment(s) => s.into(),
         }
     }
 }
 
 pub fn main() {
-    // let number = Number::new(1024u32);
-
-    // let sep = Number::new(1024u32).with_separator(3, gph!(","));
-
-    // let b16 = Number::new(1024u32).with_base(16).with_prefix("0x");
-
-    // let b16_sep = Number::new(1024u32)
-    //     .with_base(16)
-    //     .with_separator(2, gph!("_"))
-    //     .with_prefix("0x");
-
-    let n_b16_sep = Number::new(-1024i32)
+    let n_b16_sep: ThemedRenderable<NumberTag, _, _> = Number::new(-1024i32)
         .with_base(16)
         .with_separator(2, gph!("_"))
         .with_prefix("0x")
-        .theme::<DemoTheme>();
+        .with_theme::<DemoTheme>();
 
-    // let debug = Text::of::<Untagged>("Normal number:                      ")
-    //     .with_component::<Untagged>(number);
-
-    // B::render::<AnsiSink<_, Untagged>>(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard)
-    //     .unwrap();
-    // println!("");
-
-    // let debug = Text::of("Number with Separator:              ").with_component(sep);
-    // B::render::<AnsiSink<_, _>>(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard).unwrap();
-    // println!("");
-
-    // let debug = Text::of("Hex Number:                         ").with_component(b16);
-    // B::render::<AnsiSink<_, _>>(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard).unwrap();
-    // println!("");
-
-    // let debug = Text::of("Hex Number With Separator:          ").with_component(b16_sep);
-    // B::render::<AnsiSink<_, _>>(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard).unwrap();
-    // println!("");
-
-    let debug = Text::of::<Untagged>("Negative Hex Number With Separator: ")
-        .with_component::<Untagged>(n_b16_sep);
+    let debug = Text::of_tagged("Negative Hex Number With Separator: ", Untagged)
+        .with_component(n_b16_sep)
+        .with_theme::<DemoTheme>();
 
     B::render::<AnsiSink<_, _>>(AnsiSink::stdout(), &debug, W, AmbiguityPolicy::Standard).unwrap();
     println!("");

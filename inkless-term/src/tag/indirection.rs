@@ -1,7 +1,4 @@
-use inkless_core::{
-    tag::Tag,
-    theme::{Theme, ThemedTag},
-};
+use inkless_core::tag::Tag;
 
 use crate::{
     styles::{
@@ -14,7 +11,6 @@ pub trait AnsiReference: core::ops::Deref {}
 
 impl<T: ?Sized> AnsiReference for &T {}
 impl<T: ?Sized> AnsiReference for &mut T {}
-impl<Ot: Tag, Th: Theme<Ot>> AnsiReference for ThemedTag<Ot, Th> {}
 
 #[cfg(feature = "alloc")]
 impl<T: ?Sized> AnsiReference for alloc::boxed::Box<T> {}
