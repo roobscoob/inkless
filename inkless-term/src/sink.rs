@@ -1,4 +1,4 @@
-use core::ops::{ControlFlow, Deref};
+use core::ops::ControlFlow;
 
 use inkless_core::{
     grapheme::gph,
@@ -16,7 +16,7 @@ use crate::{
         write_underline_style_delta,
     },
     support::AnsiSupport,
-    tag::{AnsiTag, default::Ansi},
+    tag::{default::Ansi, indirection::AnsiDeref},
 };
 
 pub struct AnsiSink<W: CharacterWriter> {
@@ -27,76 +27,73 @@ pub struct AnsiSink<W: CharacterWriter> {
 }
 
 impl<W: CharacterWriter> AnsiSink<W> {
-    fn append_internal<T2: Deref>(
+    fn append_internal<T2: AnsiDeref>(
         &mut self,
         grapheme: &gph,
         tag: Option<T2>,
-    ) -> Result<(), W::Error>
-    where
-        T2::Target: AnsiTag,
-    {
+    ) -> Result<(), W::Error> {
         write_intensity_delta(
             &mut self.writer,
             self.last_tag.as_ref(),
-            tag.as_ref().map(|v| &**v),
+            tag.as_ref().map(|v| v.deref()),
         )?;
 
         write_blink_delta(
             &mut self.writer,
             self.last_tag.as_ref(),
-            tag.as_ref().map(|v| &**v),
+            tag.as_ref().map(|v| v.deref()),
         )?;
 
         write_italic_delta(
             &mut self.writer,
             self.last_tag.as_ref(),
-            tag.as_ref().map(|v| &**v),
+            tag.as_ref().map(|v| v.deref()),
         )?;
 
         write_concealed_delta(
             &mut self.writer,
             self.last_tag.as_ref(),
-            tag.as_ref().map(|v| &**v),
+            tag.as_ref().map(|v| v.deref()),
         )?;
 
         write_strikethrough_delta(
             &mut self.writer,
             self.last_tag.as_ref(),
-            tag.as_ref().map(|v| &**v),
+            tag.as_ref().map(|v| v.deref()),
         )?;
 
         write_underline_style_delta(
             &mut self.writer,
             self.last_tag.as_ref(),
-            tag.as_ref().map(|v| &**v),
+            tag.as_ref().map(|v| v.deref()),
         )?;
 
         write_foreground_color_delta(
             &mut self.writer,
             self.support,
             self.last_tag.as_ref(),
-            tag.as_ref().map(|v| &**v),
+            tag.as_ref().map(|v| v.deref()),
         )?;
 
         write_background_color_delta(
             &mut self.writer,
             self.support,
             self.last_tag.as_ref(),
-            tag.as_ref().map(|v| &**v),
+            tag.as_ref().map(|v| v.deref()),
         )?;
 
         write_underline_color_delta(
             &mut self.writer,
             self.support,
             self.last_tag.as_ref(),
-            tag.as_ref().map(|v| &**v),
+            tag.as_ref().map(|v| v.deref()),
         )?;
 
         write_hyperlink_delta(
             &mut self.writer,
             self.support,
             self.last_tag.as_ref(),
-            tag.as_ref().map(|v| &**v),
+            tag.as_ref().map(|v| v.deref()),
         )?;
 
         self.writer.write_str(grapheme.as_str())?;
@@ -113,10 +110,7 @@ pub enum PlaintextError<E> {
     Writer(E),
 }
 
-impl<W: CharacterWriter, T: Tag + Deref> TagSink<T> for AnsiSink<W>
-where
-    <T as Deref>::Target: AnsiTag + Sized,
-{
+impl<W: CharacterWriter, T: Tag + AnsiDeref> TagSink<T> for AnsiSink<W> {
     type Result = Result<W, PlaintextError<W::Error>>;
 
     fn append(&mut self, grapheme: &gph, tag: T) -> ControlFlow<()> {

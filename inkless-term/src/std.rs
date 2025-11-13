@@ -5,7 +5,6 @@ use inkless_core::writer::character::CharacterWriter;
 use crate::{
     sink::AnsiSink,
     support::{AnsiEnv, AnsiSupport},
-    tag::AnsiTag,
 };
 
 pub static ANSI_ENV: LazyLock<AnsiEnv<'static>> = LazyLock::new(AnsiEnv::from_env);

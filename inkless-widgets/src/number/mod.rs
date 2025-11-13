@@ -4,7 +4,6 @@ use inkless_core::{
     canvas::Canvas,
     grapheme::gph,
     renderable::{Renderable, RenderableError},
-    tag::Tag,
 };
 use num_traits::{NumCast, Zero};
 
@@ -80,14 +79,13 @@ impl<N> Number<N> {
     }
 }
 
-impl<N, T: Tag + From<NumberTag>> Renderable<T> for Number<N>
+impl<N> Renderable<NumberTag> for Number<N>
 where
     N: NumCast + Zero + Ord + Sub<Output = N> + Div<Output = N> + Rem<Output = N> + Clone,
-    T: Tag,
 {
     fn render_into<'buffer_reference>(
         &self,
-        canvas: &mut dyn Canvas<T>,
+        canvas: &mut dyn Canvas<NumberTag>,
     ) -> Result<(), RenderableError> {
         let start = canvas.get_position();
 

@@ -1,12 +1,10 @@
-use core::ops::Deref;
-
 use inkless_core::tag::{Tag, untagged::Untagged};
 
 use crate::{
     styles::{
         Ansi8Color, Ansi16Color, Ansi256Color, BlinkSpeed, Intensity, TrueColor, UnderlineStyle,
     },
-    tag::AnsiTag,
+    tag::{AnsiTag, indirection::AnsiDeref},
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -396,10 +394,9 @@ impl<'a> Default for &'a dyn AnsiTag {
 }
 
 impl Ansi {
-    pub fn from_tag<A: Deref>(value: A) -> Self
-    where
-        A::Target: AnsiTag,
-    {
+    pub fn from_tag<A: AnsiDeref>(value: A) -> Self {
+        let value = value.deref();
+
         Ansi {
             ansi8_fg: value.get_ansi8_foreground_color(),
             ansi16_fg: value.get_ansi16_foreground_color(),
