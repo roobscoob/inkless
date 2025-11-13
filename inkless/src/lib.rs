@@ -5,4 +5,11 @@ extern crate alloc;
 
 pub use inkless_core::*;
 pub use inkless_macros::*;
-pub use inkless_widgets::*;
+
+pub mod term {
+    pub use inkless_term::*;
+}
+
+pub mod widgets {
+    pub use inkless_widgets::*;
+}

@@ -4,9 +4,14 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-inkless-core = { path = "../inkless-core" }
-libc = { version = "0.2", optional = true }
+inkless-core = { path = "../inkless-core", default-features = false }
 thiserror = { version = "2.0.17", default-features = false }
+
+
+[target.'cfg(unix)'.dependencies]
+libc = { version = "0.2", optional = true }
+
+[target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", optional = true, features = [
     "Win32_System_Console",
 ] }
@@ -14,5 +19,5 @@ windows-sys = { version = "0.61", optional = true, features = [
 [features]
 # By default, include standard library support
 default = ["std"]
-std = ["alloc", "libc", "windows-sys"]
-alloc = []
+std = ["alloc", "inkless-core/std", "libc", "windows-sys"]
+alloc = ["inkless-core/alloc"]
