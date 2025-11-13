@@ -1,3 +1,5 @@
+use core::ops::Deref;
+
 use inkless_core::tag::{Tag, untagged::Untagged};
 
 use crate::{
@@ -377,7 +379,44 @@ impl AnsiTag for Ansi {
 }
 
 impl From<Untagged> for Ansi {
-    fn from(value: Untagged) -> Self {
+    fn from(_: Untagged) -> Self {
         Self::default()
+    }
+}
+
+trait SendSyncAnsiTag: AnsiTag + Send + Sync {}
+impl SendSyncAnsiTag for Ansi {}
+
+static DEFAULT: &dyn SendSyncAnsiTag = &Ansi::new();
+
+impl<'a> Default for &'a dyn AnsiTag {
+    fn default() -> Self {
+        DEFAULT
+    }
+}
+
+impl Ansi {
+    pub fn from_tag<A: Deref>(value: A) -> Self
+    where
+        A::Target: AnsiTag,
+    {
+        Ansi {
+            ansi8_fg: value.get_ansi8_foreground_color(),
+            ansi16_fg: value.get_ansi16_foreground_color(),
+            ansi256_fg: value.get_ansi256_foreground_color(),
+            true_fg: value.get_true_foreground_color(),
+            ansi8_bg: value.get_ansi8_background_color(),
+            ansi16_bg: value.get_ansi16_background_color(),
+            ansi256_bg: value.get_ansi256_background_color(),
+            true_bg: value.get_true_background_color(),
+            underline: value.get_underline(),
+            ansi256_underline: value.get_ansi256_underline_color(),
+            true_underline: value.get_true_underline_color(),
+            intensity: value.get_intensity(),
+            blink: value.get_blink_speed(),
+            italic: value.is_italic(),
+            concealed: value.is_concealed(),
+            strikethrough: value.is_strikethrough(),
+        }
     }
 }

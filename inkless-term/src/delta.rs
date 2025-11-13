@@ -13,10 +13,10 @@ use crate::{
     },
 };
 
-pub fn write_intensity_delta<W: CharacterWriter, T: AnsiTag>(
+pub fn write_intensity_delta<W: CharacterWriter, T1: AnsiTag + ?Sized, T2: AnsiTag + ?Sized>(
     writer: &mut W,
-    old: Option<&T>,
-    new: Option<&T>,
+    old: Option<&T1>,
+    new: Option<&T2>,
 ) -> Result<(), W::Error> {
     let old = old.map(AnsiTag::get_intensity).unwrap_or_default();
     let new = new.map(AnsiTag::get_intensity).unwrap_or_default();
@@ -32,10 +32,10 @@ pub fn write_intensity_delta<W: CharacterWriter, T: AnsiTag>(
     })
 }
 
-pub fn write_blink_delta<W: CharacterWriter, T: AnsiTag>(
+pub fn write_blink_delta<W: CharacterWriter, T1: AnsiTag + ?Sized, T2: AnsiTag + ?Sized>(
     writer: &mut W,
-    old: Option<&T>,
-    new: Option<&T>,
+    old: Option<&T1>,
+    new: Option<&T2>,
 ) -> Result<(), W::Error> {
     let old = old.and_then(AnsiTag::get_blink_speed);
     let new = new.and_then(AnsiTag::get_blink_speed);
@@ -51,10 +51,10 @@ pub fn write_blink_delta<W: CharacterWriter, T: AnsiTag>(
     })
 }
 
-pub fn write_italic_delta<W: CharacterWriter, T: AnsiTag>(
+pub fn write_italic_delta<W: CharacterWriter, T1: AnsiTag + ?Sized, T2: AnsiTag + ?Sized>(
     writer: &mut W,
-    old: Option<&T>,
-    new: Option<&T>,
+    old: Option<&T1>,
+    new: Option<&T2>,
 ) -> Result<(), W::Error> {
     let old = old.map(AnsiTag::is_italic).unwrap_or(false);
     let new = new.map(AnsiTag::is_italic).unwrap_or(false);
@@ -66,10 +66,10 @@ pub fn write_italic_delta<W: CharacterWriter, T: AnsiTag>(
     })
 }
 
-pub fn write_concealed_delta<W: CharacterWriter, T: AnsiTag>(
+pub fn write_concealed_delta<W: CharacterWriter, T1: AnsiTag + ?Sized, T2: AnsiTag + ?Sized>(
     writer: &mut W,
-    old: Option<&T>,
-    new: Option<&T>,
+    old: Option<&T1>,
+    new: Option<&T2>,
 ) -> Result<(), W::Error> {
     let old = old.map(AnsiTag::is_concealed).unwrap_or(false);
     let new = new.map(AnsiTag::is_concealed).unwrap_or(false);
@@ -81,10 +81,10 @@ pub fn write_concealed_delta<W: CharacterWriter, T: AnsiTag>(
     })
 }
 
-pub fn write_strikethrough_delta<W: CharacterWriter, T: AnsiTag>(
+pub fn write_strikethrough_delta<W: CharacterWriter, T1: AnsiTag + ?Sized, T2: AnsiTag + ?Sized>(
     writer: &mut W,
-    old: Option<&T>,
-    new: Option<&T>,
+    old: Option<&T1>,
+    new: Option<&T2>,
 ) -> Result<(), W::Error> {
     let old = old.map(AnsiTag::is_strikethrough).unwrap_or(false);
     let new = new.map(AnsiTag::is_strikethrough).unwrap_or(false);
@@ -96,11 +96,15 @@ pub fn write_strikethrough_delta<W: CharacterWriter, T: AnsiTag>(
     })
 }
 
-pub fn write_foreground_color_delta<W: CharacterWriter, T: AnsiTag>(
+pub fn write_foreground_color_delta<
+    W: CharacterWriter,
+    T1: AnsiTag + ?Sized,
+    T2: AnsiTag + ?Sized,
+>(
     writer: &mut W,
     support: AnsiSupport,
-    old: Option<&T>,
-    new: Option<&T>,
+    old: Option<&T1>,
+    new: Option<&T2>,
 ) -> Result<(), W::Error> {
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     enum EffectiveFgColor {
@@ -111,7 +115,7 @@ pub fn write_foreground_color_delta<W: CharacterWriter, T: AnsiTag>(
         TrueColor(TrueColor),
     }
 
-    fn resolve_effective<T: AnsiTag>(tag: &T, support: AnsiSupport) -> EffectiveFgColor {
+    fn resolve_effective<T: AnsiTag + ?Sized>(tag: &T, support: AnsiSupport) -> EffectiveFgColor {
         match support.color {
             AnsiColorSupport::TrueColor => {
                 // Try most specific → least specific
@@ -181,11 +185,15 @@ pub fn write_foreground_color_delta<W: CharacterWriter, T: AnsiTag>(
     })
 }
 
-pub fn write_background_color_delta<W: CharacterWriter, T: AnsiTag>(
+pub fn write_background_color_delta<
+    W: CharacterWriter,
+    T1: AnsiTag + ?Sized,
+    T2: AnsiTag + ?Sized,
+>(
     writer: &mut W,
     support: AnsiSupport,
-    old: Option<&T>,
-    new: Option<&T>,
+    old: Option<&T1>,
+    new: Option<&T2>,
 ) -> Result<(), W::Error> {
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     enum EffectiveBgColor {
@@ -196,7 +204,7 @@ pub fn write_background_color_delta<W: CharacterWriter, T: AnsiTag>(
         TrueColor(TrueColor),
     }
 
-    fn resolve_effective<T: AnsiTag>(tag: &T, support: AnsiSupport) -> EffectiveBgColor {
+    fn resolve_effective<T: AnsiTag + ?Sized>(tag: &T, support: AnsiSupport) -> EffectiveBgColor {
         match support.color {
             AnsiColorSupport::TrueColor => {
                 // Try most specific → least specific
@@ -267,10 +275,14 @@ pub fn write_background_color_delta<W: CharacterWriter, T: AnsiTag>(
     })
 }
 
-pub fn write_underline_style_delta<W: CharacterWriter, T: AnsiTag>(
+pub fn write_underline_style_delta<
+    W: CharacterWriter,
+    T1: AnsiTag + ?Sized,
+    T2: AnsiTag + ?Sized,
+>(
     writer: &mut W,
-    old: Option<&T>,
-    new: Option<&T>,
+    old: Option<&T1>,
+    new: Option<&T2>,
 ) -> Result<(), W::Error> {
     let old_style = old.and_then(AnsiTag::get_underline);
     let new_style = new.and_then(AnsiTag::get_underline);
@@ -290,11 +302,15 @@ pub fn write_underline_style_delta<W: CharacterWriter, T: AnsiTag>(
     })
 }
 
-pub fn write_underline_color_delta<W: CharacterWriter, T: AnsiTag>(
+pub fn write_underline_color_delta<
+    W: CharacterWriter,
+    T1: AnsiTag + ?Sized,
+    T2: AnsiTag + ?Sized,
+>(
     writer: &mut W,
     support: AnsiSupport,
-    old: Option<&T>,
-    new: Option<&T>,
+    old: Option<&T1>,
+    new: Option<&T2>,
 ) -> Result<(), W::Error> {
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     enum EffectiveUnderlineColor {
@@ -303,7 +319,10 @@ pub fn write_underline_color_delta<W: CharacterWriter, T: AnsiTag>(
         TrueColor(TrueColor),
     }
 
-    fn resolve_effective<T: AnsiTag>(tag: &T, support: AnsiSupport) -> EffectiveUnderlineColor {
+    fn resolve_effective<T: AnsiTag + ?Sized>(
+        tag: &T,
+        support: AnsiSupport,
+    ) -> EffectiveUnderlineColor {
         match support.underline {
             AnsiUnderlineColorSupport::TrueColor => {
                 if let Some(c) = tag.get_true_underline_color() {
@@ -347,11 +366,11 @@ pub fn write_underline_color_delta<W: CharacterWriter, T: AnsiTag>(
     })
 }
 
-pub fn write_hyperlink_delta<W: CharacterWriter, T: AnsiTag>(
+pub fn write_hyperlink_delta<W: CharacterWriter, T1: AnsiTag + ?Sized, T2: AnsiTag + ?Sized>(
     writer: &mut W,
     support: AnsiSupport,
-    old: Option<&T>,
-    new: Option<&T>,
+    old: Option<&T1>,
+    new: Option<&T2>,
 ) -> Result<(), W::Error> {
     if !support.hyperlinks {
         return Ok(());

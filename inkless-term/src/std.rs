@@ -70,7 +70,7 @@ impl AnsiSupport {
     }
 }
 
-impl<'a, T: AnsiTag> AnsiSink<IoWriter<StdoutLock<'a>>, T> {
+impl<'a> AnsiSink<IoWriter<StdoutLock<'a>>> {
     pub fn stdout() -> Self {
         Self {
             result: Ok(()),
